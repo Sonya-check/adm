@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Text;
@@ -13,125 +14,132 @@ namespace ConsoleApp1
 {
     internal class Program
     {
-        static int a, b, c, d; 
+        static int a, b, c, d, count = 0; 
         static double w1, w2, w3;
         static BinaryTree<int> tree = new BinaryTree<int>();
+        static List<int> list_G = new List<int>();
+
         static void Main(string[] args)
         {
-            Random random = new Random();
-            a = random.Next(20);
-            b = random.Next(a + 1, a + 6);
-            c = random.Next(b + 1, b + 20);
-            d = random.Next(c + 1, c + 30);
-
-            int count_num = 8;
-            int count_G, all_G = 0, need_count = count_num;
-            bool flag;
+            List<int> list = new List<int> { 0 };
             string xs;
 
-            Console.WriteLine("Введите 8 разных значений х через пробел");
-            List<int> list = new List<int> {0};
-
-            while (all_G < count_num)
+            string path = @"C:\Users\olyac\Desktop\abcd.txt";
+            try
             {
-                count_G = 0;
-                flag = false;
-
-                if (all_G != 0)
+                using (StreamReader sr = new StreamReader(path))
                 {
-                    need_count = count_num - all_G + 2;
-                    Console.WriteLine("Недостаточно точек для построения дерева." + "\n" +
-                    $"Пожалуйста, введите еще {need_count} чисел");
-                }
-                
-                while (flag == false)
-                {
-                    xs = Console.ReadLine();
-                    list = xs.Split(' ').Select(y => Convert.ToInt32(y)).ToList();
-                    if (list.Count == need_count)
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        flag = true;
-                        Console.WriteLine("\n");
+                        list = line.Split(' ').Select(y => Convert.ToInt32(y)).ToList();
+                        Print_data(list);
                     }
-                    else
+                    
+                    while (count < 7)
                     {
-                        Console.WriteLine($"Пожалуйста, введите {need_count} чисел");
+                        Console.WriteLine("\nВведите еще параметры:");
+                        xs = Console.ReadLine();
+                        list = xs.Split(' ').Select(y => Convert.ToInt32(y)).ToList();
+                        Print_data(list);
                     }
                 }
-                count_G = Nechet_to_chet(list);
-                all_G += count_G;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Ошибка при чтении файла: " + e.Message);
             }
 
+            /*добавление узла и вывод нового дерева*/
+            for (int i = 0; i < list_G.Count; i++)
+            {
+                tree.Add(list_G[i]);
+            }
 
             Console.WriteLine("Дерево:");
-            Console.WriteLine("------------------------------------------------------");
+            Console.WriteLine("------------------------------------------------------------");
             tree.Print();
-            Console.WriteLine("\\nХотите добавить узел?(да/нет)");
-            string ans = Console.ReadLine();
 
+            Console.WriteLine("\nХотите добавить узел?(да/нет)");
+            string ans = Console.ReadLine();
+            
             while (ans == "да")
             {
-                count_G = 0;
-                Console.WriteLine("Назовите узел:");
-
-                while (count_G == 0)
-                {
-                    xs = Console.ReadLine();
-                    list = xs.Split(' ').Select(y => Convert.ToInt32(y)).ToList();
-                    count_G = Nechet_to_chet(list);
-                    if (count_G == 0)
-                    {
-                        Console.WriteLine("Введите другой узел");
-                    }
-                }
-
+                Console.WriteLine("Напишите набор параметров:");
+                xs = Console.ReadLine();
+                list = xs.Split(' ').Select(y => Convert.ToInt32(y)).ToList();
+                Print_data(list);
+                tree.Add(list_G[count]);
                 Console.WriteLine("\nДерево:");
-                Console.WriteLine("------------------------------------------------------");
+                Console.WriteLine("--------------------------------------------------------------");
                 tree.Print();
 
-                Console.WriteLine("\\nХотите добавить узел?(да/нет)");
+                Console.WriteLine("\n\nХотите добавить узел?(да/нет)");
                 ans = Console.ReadLine();
             }
         }
 
-        /*добавление четкого числа в дерево*/
-        static int Nechet_to_chet(List<int> list)
+        static void Print_data(List<int> list)
         {
-            int count = 0, x, G;
-            for (int i = 0; i < list.Count(); i++)
+            a = list[0];
+            b = list[1];
+            c = list[2];
+            d = list[3];
+            int G = Nechet_to_chet(a, d);
+            
+            if (!Checkout(G))
             {
-                x = list[i];
-                G = Formula_G(x);
-                if (G != -1)
+                Console.WriteLine($"\n{list_G.Count + 1}) Набор параметров:");
+                Console.WriteLine($"{a}, {b}, {c}, {d}");
+                list_G.Add(G);
+                count++;
+                Console.WriteLine();
+
+                Console.Write("x    ");
+                for (int i = a; i < d + 1; i++)
                 {
-                    tree.Add(Convert.ToInt32(G));
-                    count++;
+                    Console.Write($"{i}  ");
+                }
+                Console.WriteLine($"\n\nЧеткое число \nG = {G}\n");
+            }
+        }
+        static bool Checkout(int G)
+        {
+            bool flag = false;
+            for (int i = 0; i < list_G.Count; i++)
+            {
+                if (G == list_G[i])
+                {
+                    flag = true;
+                    break;
                 }
             }
-            return count;
+            return flag;
+        }
+        /*добавление четкого числа в дерево*/
+        static int Nechet_to_chet(int start, int end)
+        {
+            int G;
+            G = Formula_G(start, end);
+            return G;
         }
 
         /*нахождение четкого числа*/
-        static int Formula_G(int x)
+        static int Formula_G(int start, int end)
         {
             double F, g = 0;
             double sum_f = 0;
             int G = 0;
-            for (int i = x; i < x + 5; i++)
+            Console.WriteLine("\nНечеткое множество");
+            Console.Write("F(x) ");
+            for (int i = start; i < end + 1; i++)
             {
                 F = Formula_F(i);
                 g += i * F;
                 sum_f += F;
+                Console.Write($"{F}  ");
             }
-            if (sum_f == 0)
-            {
-                G = -1;
-            }
-            else
-            {
-                G = Convert.ToInt32(g / sum_f);
-                Console.WriteLine($"x = {x};\t  G = {G}");
-            }
+            G = Convert.ToInt32(g / sum_f);
             return G;
         }
 
